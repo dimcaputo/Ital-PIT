@@ -47,7 +47,7 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
                     pose_data[j+2] = landmark.z
                     j = j + 3
             
-            index_class = np.argmax(model.predict(pose_data.reshape(1,99)), axis=1)
+            index_class = np.argmax(model.predict(pose_data.reshape(1,99), verbose=0), axis=1)
             class_predicted = classes[index_class]
 
             print(class_predicted)
