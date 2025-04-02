@@ -12,6 +12,7 @@ from keras.metrics import F1Score
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
 
 # Define a function to create a neural network model
 def get_model(input_size, filters=8, dropout1=0.2, dropout2=0.2, classes=10):
@@ -97,4 +98,6 @@ print(classification_report(np.argmax(y_train, axis=1), np.argmax(model.predict(
 model.save('classifier.keras')
 
 # Save the classes in order
-np.savez('classes_in_order', y.columns.values, allow_pickle=True)
+with open("classes.csv", "w", newline="") as file:
+    writer = csv.writer(file)
+    writer.writerow(y.columns.values.tolist())

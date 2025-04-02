@@ -2,7 +2,9 @@ import cv2
 import mediapipe as mp
 import csv
 import numpy as np
+import pandas as pd
 from keras.models import Sequential, load_model
+import pickle
 
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
@@ -19,8 +21,7 @@ landmark_names = [
 ]
 
 model = load_model('classifier.keras')
-classes = np.load('classes_in_order.npz')['arr_0']
-
+classes = pd.read_csv('classes.csv')
 
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
 
