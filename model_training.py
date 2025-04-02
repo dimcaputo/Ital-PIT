@@ -97,4 +97,4 @@ print(classification_report(np.argmax(y_train, axis=1), np.argmax(model.predict(
 model.save('classifier.keras')
 
 # Save the classes in order
-np.savez('classes_in_order.npz', x=y.columns.values)
+np.savez('classes_in_order', y.columns.values, allow_pickle=True)
