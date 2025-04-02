@@ -94,4 +94,7 @@ df_res = df_res.map(lambda x: y.columns.values[x])
 print(classification_report(np.argmax(y_train, axis=1), np.argmax(model.predict(X_train), axis=1), target_names=y.columns.values))
 
 # Save the trained model
-model.save('classifer.keras')
+model.save('classifier.keras')
+
+# Save the classes in order
+np.savez('classes_in_order.npz', x=y.columns.values)
