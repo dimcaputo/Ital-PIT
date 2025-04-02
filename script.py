@@ -21,7 +21,7 @@ landmark_names = [
 ]
 
 model = load_model('classifier.keras')
-classes = pd.read_csv('classes.csv')
+classes = pd.read_csv('classes.csv', names=[n for n in range(11)]).values[0]
 
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
 
@@ -47,8 +47,10 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
                     pose_data[j+2] = landmark.z
                     j = j + 3
             
+            index_class = np.argmax(model.predict(pose_data.reshape(1,99)), axis=1)
+            class_predicted = classes[index_class]
 
-            print(classes)
+            print(class_predicted)
 
             # Dessiner les landmarks sur l'image
             mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
