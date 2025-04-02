@@ -67,24 +67,26 @@ scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-model2 = get_model(99, 64, 0.5, 0.5, 11)
+model = get_model(X_train.shape[1], 64, 0.5, 0.5, 11)
 
-model2.compile(optimizer='adam', metrics=[F1Score(average='macro', name='f1_score')], loss='categorical_focal_crossentropy')
-history2 = model2.fit(X_train, y_train, epochs=200, validation_split=0.1, callbacks=[stop_early(patience=50)])
+model.compile(optimizer='adam', metrics=[F1Score(average='macro', name='f1_score')], loss='categorical_focal_crossentropy')
+history = model.fit(X_train, y_train, epochs=200, validation_split=0.1, callbacks=[stop_early(patience=50)])
 
 print(classification_report(y_true=np.argmax(y_test, axis=1),
-                            y_pred=np.argmax(model2.predict(X_test), axis=1),
+                            y_pred=np.argmax(model.predict(X_test), axis=1),
                             target_names=y.columns.values))
 
-vf1_arr = history2.history["val_f1_score"]
-f1_arr = history2.history["f1_score"]
+vf1_arr = history.history["val_f1_score"]
+f1_arr = history.history["f1_score"]
 plt.plot(range(len(vf1_arr)),vf1_arr)
 plt.plot(range(len(f1_arr)),f1_arr)
 
-df_res = pd.DataFrame(np.argmax(model2.predict(X_test), axis=1))
+df_res = pd.DataFrame(np.argmax(model.predict(X_test), axis=1))
 
 df_res = df_res.map(lambda x:y.columns.values[x])
 
 print(classification_report(y_true=np.argmax(y_train, axis=1),
-                            y_pred=np.argmax(model2.predict(X_train), axis=1),
+                            y_pred=np.argmax(model.predict(X_train), axis=1),
                             target_names=y.columns.values))
+
+model.save('classifer.keras')
