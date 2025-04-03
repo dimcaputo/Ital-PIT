@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from keras.models import Sequential, load_model
 import pickle
+import os
 
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
@@ -21,7 +22,9 @@ landmark_names = [
 ]
 
 model = load_model('cnn.keras')
-classes = pd.read_csv('classes.csv', names=[n for n in range(4)]).values[0]
+for root, dirs, files in os.walk('images/'):
+    if dirs != []:
+        classes = dirs
 
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
 
@@ -37,7 +40,7 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
         image_resized = image_resized[np.newaxis,:,:,:]
 
         prediction = model.predict(image_resized)
-        index_class = np.argmax(prediction, axis=1)
+        index_class = np.argmax(prediction)
         class_predicted = classes[index_class]
 
         print(class_predicted)

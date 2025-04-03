@@ -2,7 +2,7 @@
 from keras.models import Sequential
 from keras.layers import Input, Conv2D, MaxPooling2D, Dense, Dropout, BatchNormalization, Resizing, Flatten
 from keras.metrics import F1Score
-from keras.utils import image_dataset_from_directory
+from keras.utils import image_dataset_from_directory, to_categorical
 from keras.callbacks import EarlyStopping
 import tensorflow as tf
 import os
@@ -10,6 +10,8 @@ import csv
 from PIL import Image
 import numpy as np
 from sklearn.model_selection import train_test_split
+import regex as re
+import pandas as pd
 
 
 def stop_early(patience=10, start=10):
@@ -23,39 +25,29 @@ def stop_early(patience=10, start=10):
         start_from_epoch=start  # Epoch to start monitoring
     )
 
-def make_arrays(filepath):
+def make_arrays(filepath, size):
     labels = []
+    file_count = sum(len(files) for _, _, files in os.walk(filepath))
     for root, dirs, files in os.walk(filepath):
-        array = np.zeros(shape=(len(files),360,480,3))
-        for i, dir,file in enumerate(zip(dirs,files)):
-            labels.append(dir)
+        array = np.zeros(shape=(file_count,size,size,3))
+        for i, file in enumerate(files):
             with Image.open(os.path.join(root, file)) as im:
-                array[i,:,:,:] = im
+                array[i,:,:,:] = im.resize((size, size), Image.Resampling.LANCZOS)
+                labels.append(re.sub(r'^.+/','', root))
+        print(f'{root} folder done')
     labels = np.asarray(labels)
     return array, labels
 
+size = 128
+X, y = make_arrays('images/', size)
 
-# train_ds, valid_ds = image_dataset_from_directory(
-#     'images',
-#     image_size = (128,128),
-#     seed = 38,
-#     subset = 'both',
-#     validation_split = 0.2
-# )
+y = pd.get_dummies(y, dtype=int)
 
-# class_names = train_ds.class_names
 
-# with open("classes.csv", "w", newline="") as file:
-#     writer = csv.writer(file)
-#     writer.writerow(class_names)
-
-# AUTOTUNE = tf.data.AUTOTUNE
-
-# train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
-# valid_ds = valid_ds.cache().prefetch(buffer_size=AUTOTUNE)
+X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=38)
 
 model = Sequential([
-    Input(shape=(128,128,3,)),
+    Input(shape=(size,size,3,)),
     Conv2D(16, kernel_size= 3, activation='relu', padding='same'),
     Conv2D(32, kernel_size= 3, activation='relu', padding='same'),
     Conv2D(64, kernel_size= 3, activation='relu', padding='same'),
@@ -87,11 +79,12 @@ model = Sequential([
 
 print(model.summary())
 
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 model.fit(
-    train_ds,
+    X_train,
+    y_train,
     epochs=5,
-    validation_data=valid_ds
+    validation_split=0.1
 )
 
 model.save('cnn.keras')
