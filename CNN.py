@@ -7,8 +7,9 @@ from keras.callbacks import EarlyStopping
 import tensorflow as tf
 import os
 import csv
-import warnings
-warnings.filterwarnings('ignore')
+from PIL import Image
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 
 def stop_early(patience=10, start=10):
@@ -22,25 +23,36 @@ def stop_early(patience=10, start=10):
         start_from_epoch=start  # Epoch to start monitoring
     )
 
+def make_arrays(filepath):
+    labels = []
+    for root, dirs, files in os.walk(filepath):
+        array = np.zeros(shape=(len(files),360,480,3))
+        for i, dir,file in enumerate(zip(dirs,files)):
+            labels.append(dir)
+            with Image.open(os.path.join(root, file)) as im:
+                array[i,:,:,:] = im
+    labels = np.asarray(labels)
+    return array, labels
 
-train_ds, valid_ds = image_dataset_from_directory(
-    'images',
-    image_size = (128,128),
-    seed = 38,
-    subset = 'both',
-    validation_split = 0.2
-)
 
-class_names = train_ds.class_names
+# train_ds, valid_ds = image_dataset_from_directory(
+#     'images',
+#     image_size = (128,128),
+#     seed = 38,
+#     subset = 'both',
+#     validation_split = 0.2
+# )
 
-with open("classes.csv", "w", newline="") as file:
-    writer = csv.writer(file)
-    writer.writerow(class_names)
+# class_names = train_ds.class_names
 
-AUTOTUNE = tf.data.AUTOTUNE
+# with open("classes.csv", "w", newline="") as file:
+#     writer = csv.writer(file)
+#     writer.writerow(class_names)
 
-train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
-valid_ds = valid_ds.cache().prefetch(buffer_size=AUTOTUNE)
+# AUTOTUNE = tf.data.AUTOTUNE
+
+# train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
+# valid_ds = valid_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 model = Sequential([
     Input(shape=(128,128,3,)),
