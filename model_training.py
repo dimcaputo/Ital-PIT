@@ -21,20 +21,21 @@ with tf.device('/CPU:0'):
         model = Sequential([
             Input(shape=(input_size,)),  # Input layer
             Dense(filters, activation='relu'),  # Hidden layers with ReLU activation
-            Dense(filters*2, activation='relu'),
-            Dense(filters*3, activation='relu'),
-            Dense(filters*4, activation='relu'),
+            Dense(filters, activation='relu'),
+            Dense(filters, activation='relu'),
+            Dense(filters, activation='relu'),
             BatchNormalization(),  # Normalization to stabilize learning
             Dropout(dropout1),  # Dropout to prevent overfitting
             Dense(filters, activation='relu'),
-            Dense(filters*2, activation='relu'),
-            Dense(filters*3, activation='relu'),
-            Dense(filters*4, activation='relu'),
+            Dense(filters, activation='relu'),
+            Dense(filters, activation='relu'),
+            Dense(filters, activation='relu'),
             BatchNormalization(),
             Dropout(dropout2),
+            Dense(filters, activation='relu'),
             Dense(classes, activation='softmax'),  # Output layer with softmax for classification
         ])
-        model.summary()  # Display the model architecture
+        print(model.summary())  # Display the model architecture
         return model
 
     # Define a function for early stopping during training
@@ -73,28 +74,20 @@ with tf.device('/CPU:0'):
     X_test = scaler.transform(X_test)
 
     # Create, compile, and train the model
-    model = get_model(X_train.shape[1], 64, 0.2, 0.2, 10)
+    model = get_model(X_train.shape[1], 16, 0.2, 0.2, 10)
     model.compile(optimizer='adam', metrics=[F1Score(average='macro', name='f1_score')], loss='categorical_focal_crossentropy')
 
-    history = model.fit(X_train, y_train, epochs=200, validation_split=0.1, callbacks=[stop_early(patience=50)])
+    history = model.fit(X_train, y_train, epochs=200, validation_split=0.2, callbacks=[stop_early(patience=50)])
 
-    # Evaluate the model and plot F1 score
+    # Evaluate the model
     print(classification_report(np.argmax(y_test, axis=1), np.argmax(model.predict(X_test), axis=1), target_names=y.columns.values))
-    vf1_arr = history.history["val_f1_score"]
-    f1_arr = history.history["f1_score"]
-    plt.plot(range(len(vf1_arr)), vf1_arr, label='Validation F1 Score')
-    plt.plot(range(len(f1_arr)), f1_arr, label='Training F1 Score')
-    plt.xlabel('Epochs')
-    plt.ylabel('F1 Score')
-    plt.legend()
-    plt.show()
+
 
     # Predict and map labels for the test set
     df_res = pd.DataFrame(np.argmax(model.predict(X_test), axis=1))
     df_res = df_res.map(lambda x: y.columns.values[x])
 
-    # Evaluate the model on the training set
-    print(classification_report(np.argmax(y_train, axis=1), np.argmax(model.predict(X_train), axis=1), target_names=y.columns.values))
+    
 
     # Save the trained model
     model.save('classifier.keras')
@@ -103,3 +96,12 @@ with tf.device('/CPU:0'):
     with open("classes.csv", "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(y.columns.values.tolist())
+
+    vf1_arr = history.history["val_f1_score"]
+    f1_arr = history.history["f1_score"]
+    plt.plot(range(len(vf1_arr)), vf1_arr, label='Validation F1 Score')
+    plt.plot(range(len(f1_arr)), f1_arr, label='Training F1 Score')
+    plt.xlabel('Epochs')
+    plt.ylabel('F1 Score')
+    plt.legend()
+    plt.show()
