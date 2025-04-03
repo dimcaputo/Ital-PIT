@@ -20,8 +20,8 @@ landmark_names = [
     "LeftFootIndex", "RightFootIndex"
 ]
 
-model = load_model('classifier.keras')
-classes = pd.read_csv('classes.csv', names=[n for n in range(11)]).values[0]
+model = load_model('cnn.keras')
+classes = pd.read_csv('classes.csv', names=[n for n in range(4)]).values[0]
 
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
 
@@ -33,27 +33,17 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
 
         # Conversion en RGB pour MediaPipe
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = pose.process(image_rgb)
+        image_resized = cv2.resize(image_rgb, (128,128), interpolation= cv2.INTER_LINEAR)
+        image_resized = image_resized[np.newaxis,:,:,:]
 
-        
-        if results.pose_landmarks:
-            pose_data = np.zeros(shape=3 * len(results.pose_landmarks.landmark))  
+        prediction = model.predict(image_resized)
+        index_class = np.argmax(prediction, axis=1)
+        class_predicted = classes[index_class]
 
-            # Ajouter chaque landmark X, Y, Z
-            j = 0
-            for landmark in results.pose_landmarks.landmark:
-                    pose_data[j] = landmark.x
-                    pose_data[j+1] = landmark.y
-                    pose_data[j+2] = landmark.z
-                    j = j + 3
-            
-            index_class = np.argmax(model.predict(pose_data.reshape(1,99), verbose=0), axis=1)
-            class_predicted = classes[index_class]
+        print(class_predicted)
 
-            print(class_predicted)
-
-            # Dessiner les landmarks sur l'image
-            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+        # Dessiner les landmarks sur l'image
+       # mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
         
         cv2.imshow('MediaPipe Pose', image)
