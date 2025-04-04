@@ -56,34 +56,31 @@ with tf.device('/CPU:0'):
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             results = pose.process(image_rgb)
 
-            
-
             if results.pose_landmarks:
                 coordinates = []
                 positions = results.pose_landmarks.landmark
+                pose_data = np.zeros(shape=(3 * len(results.pose_landmarks.landmark) + 7,)) 
+                j = 0
                 for position in positions:
                     coordinates.append((position.x, position.y, position.z))
+                    pose_data[j] = position.x
+                    pose_data[j+1] = position.y
+                    pose_data[j+2] = position.z
+                    j = j + 3
 
-                pose_data = np.zeros(shape=(7,))  
+                pose_data[3*len(results.pose_landmarks.landmark)+0] = calculer_angle(coordinates[14], coordinates[12], coordinates[24])                         # right_elbow_right_shoulder_right_hip
+                pose_data[3*len(results.pose_landmarks.landmark)+1] = calculer_angle(coordinates[13], coordinates[11], coordinates[23])                         # left_elbow_left_shoulder_left_hip
+                pose_data[3*len(results.pose_landmarks.landmark)+2] = calculer_angle(coordinates[26], tuple((x + y) / 2 for x, y in zip(coordinates[23], coordinates[24])), coordinates[25])  # right_knee_mid_hip_left_knee
+                pose_data[3*len(results.pose_landmarks.landmark)+3] = calculer_angle(coordinates[24], coordinates[26], coordinates[28])                         # right_hip_right_knee_right_ankle
+                pose_data[3*len(results.pose_landmarks.landmark)+4] = calculer_angle(coordinates[23], coordinates[25], coordinates[27])                         # left_hip_left_knee_left_ankle
+                pose_data[3*len(results.pose_landmarks.landmark)+5] = calculer_angle(coordinates[16], coordinates[14], coordinates[12])                         # right_wrist_right_elbow_right_shoulder
+                pose_data[3*len(results.pose_landmarks.landmark)+6] = calculer_angle(coordinates[15], coordinates[13], coordinates[11])    
                 
-                # Calculate angles and add to array
-                pose_data[0] = calculer_angle(coordinates[14], coordinates[12], coordinates[24])                         # right_elbow_right_shoulder_right_hip
-                pose_data[1] = calculer_angle(coordinates[13], coordinates[11], coordinates[23])                         # left_elbow_left_shoulder_left_hip
-                pose_data[2] = calculer_angle(coordinates[26], tuple((x + y) / 2 for x, y in zip(coordinates[23], coordinates[24])), coordinates[25])  # right_knee_mid_hip_left_knee
-                pose_data[3] = calculer_angle(coordinates[24], coordinates[26], coordinates[28])                         # right_hip_right_knee_right_ankle
-                pose_data[4] = calculer_angle(coordinates[23], coordinates[25], coordinates[27])                         # left_hip_left_knee_left_ankle
-                pose_data[5] = calculer_angle(coordinates[16], coordinates[14], coordinates[12])                         # right_wrist_right_elbow_right_shoulder
-                pose_data[6] = calculer_angle(coordinates[15], coordinates[13], coordinates[11])                         # left_wrist_left_elbow_left_shoulder
 
-                with tf.device('/CPU:0'):
-                    prediction = model.predict(pose_data.reshape(1,7), verbose=0)
-                    if (model.predict(pose_data.reshape(1,7), verbose=0) > 0.8).astype(int).all() == True:
-                        class_predicted = 'NO_POSE'
-                    else:
-                        index_class = np.argmax(prediction, axis=1)
-                        class_predicted = classes[index_class]
+                prediction = model.predict(pose_data.reshape(1, 3 * len(results.pose_landmarks.landmark) + 7), verbose=0)
+                index_class = np.argmax(prediction, axis=1)
+                class_predicted = classes[index_class]
                     
-
                 print(class_predicted)
 
                 # Dessiner les landmarks sur l'image
